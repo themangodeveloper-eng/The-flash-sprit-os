@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VQPS Cloud OS</title>
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial,sans-serif;
+}
+
+body{
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:linear-gradient(135deg,#020617,#0f172a,#1e293b);
+  color:white;
+}
+
+.container{
+  width:420px;
+  padding:30px;
+  border-radius:24px;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,0.1);
+  box-shadow:0 0 30px rgba(0,0,0,0.4);
+}
+
+.logo{
+  text-align:center;
+  font-size:58px;
+  margin-bottom:12px;
+}
+
+h1{
+  text-align:center;
+  color:#60a5fa;
+  margin-bottom:8px;
+}
+
+.subtitle{
+  text-align:center;
+  color:#cbd5e1;
+  margin-bottom:22px;
+}
+
+button{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:12px;
+  margin-bottom:14px;
+  cursor:pointer;
+  font-size:16px;
+  transition:0.3s;
+}
+
+.google{
+  background:white;
+  color:black;
+}
+
+.google:hover{
+  transform:scale(1.02);
+}
+
+.email{
+  background:#2563eb;
+  color:white;
+}
+
+.email:hover{
+  background:#1d4ed8;
+}
+
+.submit{
+  background:#22c55e;
+  color:white;
+}
+
+.submit:hover{
+  background:#16a34a;
+}
+
+.logout{
+  background:#dc2626;
+  color:white;
+}
+
+.logout:hover{
+  background:#b91c1c;
+}
+
+.form{
+  display:none;
+  margin-top:12px;
+}
+
+input,select{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:#0f172a;
+  color:white;
+  margin-bottom:14px;
+}
+
+.result{
+  display:none;
+  margin-top:18px;
+  background:rgba(255,255,255,0.06);
+  padding:16px;
+  border-radius:12px;
+}
+
+.status{
+  text-align:center;
+  margin-top:12px;
+  color:#93c5fd;
+  font-size:14px;
+}
+
+.secure{
+  text-align:center;
+  margin-top:10px;
+  color:#4ade80;
+  font-size:13px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="logo">⚡</div>
+
+<h1>VQPS Cloud OS</h1>
+
+<div class="subtitle">
+Secure Linux-Based Cloud Platform
+</div>
+
+<button class="google" onclick="googleLogin()">
+Continue with Google
+</button>
+
+<button class="email" onclick="showForm()">
+Continue with Email
+</button>
+
+<div class="form" id="form">
+
+<input type="text" id="username" placeholder="Username">
+
+<input type="email" id="email" placeholder="Email Address">
+
+<input type="password" id="password" placeholder="Password">
+
+<select id="theme">
+<option>Dark Theme</option>
+<option>Light Theme</option>
+<option>Neon Theme</option>
+</select>
+
+<select id="performance">
+<option>Balanced</option>
+<option>Gaming</option>
+<option>Power Saving</option>
+</select>
+
+<button class="submit" onclick="registerUser()">
+Create Secure Account
+</button>
+
+</div>
+
+<div class="result" id="result"></div>
+
+<div class="status" id="status">
+Connecting securely to VQPS Cloud...
+</div>
+
+<div class="secure">
+Firebase Authentication + Firestore Enabled
+</div>
+
+</div>
+
+<script type="module">
+
+// Firebase SDK Imports
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import {
+  getAnalytics
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+
+// Firebase Config
+
+const firebaseConfig = {
+
+  apiKey: "AIzaSyBVCuJbrb3UCS9-oAxfztYFB53Nd4JRcBI",
+
+  authDomain: "vqps-a9e14.firebaseapp.com",
+
+  projectId: "vqps-a9e14",
+
+  storageBucket: "vqps-a9e14.firebasestorage.app",
+
+  messagingSenderId: "644861029919",
+
+  appId: "1:644861029919:web:d9617324a00681105b2f2a",
+
+  measurementId: "G-910QHKCBQE"
+
+};
+
+// Initialize Firebase
+
+const app = initializeApp(firebaseConfig);
+
+const analytics = getAnalytics(app);
+
+const auth = getAuth(app);
+
+const db = getFirestore(app);
+
+const provider = new GoogleAuthProvider();
+
+// Secure Session
+
+await setPersistence(auth,browserLocalPersistence);
+
+// Cloud Connected Status
+
+document.getElementById("status").innerHTML =
+"Secure cloud connection established";
+
+// Show Email Form
+
+window.showForm = function(){
+
+  document.getElementById("form").style.display =
+    "block";
+
+}
+
+// Google Login
+
+window.googleLogin = async function(){
+
+  try{
+
+    const result =
+      await signInWithPopup(auth,provider);
+
+    const user = result.user;
+
+    document.getElementById("result").style.display =
+      "block";
+
+    document.getElementById("result").innerHTML = `
+
+      <h3>Google Login Successful</h3>
+
+      <br>
+
+      <b>Name:</b> ${user.displayName}<br>
+
+      <b>Email:</b> ${user.email}<br><br>
+
+      Secure cloud authentication completed.
+
+      <br><br>
+
+      <button class="logout" onclick="logoutUser()">
+      Logout
+      </button>
+
+    `;
+
+  }catch(error){
+
+    alert(error.message);
+
+  }
+
+}
+
+// Email Registration
+
+window.registerUser = async function(){
+
+  const username =
+    document.getElementById("username").value.trim();
+
+  const email =
+    document.getElementById("email").value.trim();
+
+  const password =
+    document.getElementById("password").value;
+
+  const theme =
+    document.getElementById("theme").value;
+
+  const performance =
+    document.getElementById("performance").value;
+
+  // Validation
+
+  if(username.length < 3){
+
+    alert("Username must be at least 3 characters");
+    return;
+
+  }
+
+  if(password.length < 6){
+
+    alert("Password must be at least 6 characters");
+    return;
+
+  }
+
+  try{
+
+    const userCredential =
+      await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+    const user = userCredential.user;
+
+    // Save Secure Data
+
+    await setDoc(doc(db,"users",user.uid),{
+
+      uid: user.uid,
+
+      username: username,
+
+      email: email,
+
+      theme: theme,
+
+      performance: performance,
+
+      provider: "email",
+
+      createdAt: new Date().toISOString()
+
+    });
+
+    document.getElementById("result").style.display =
+      "block";
+
+    document.getElementById("result").innerHTML = `
+
+      <h3>Welcome to VQPS Cloud</h3>
+
+      <br>
+
+      <b>User:</b> ${username}<br>
+
+      <b>Email:</b> ${email}<br>
+
+      <b>Theme:</b> ${theme}<br>
+
+      <b>Mode:</b> ${performance}<br><br>
+
+      Secure preferences synced successfully.
+
+      <br><br>
+
+      <button class="logout" onclick="logoutUser()">
+      Logout
+      </button>
+
+    `;
+
+  }catch(error){
+
+    alert(error.message);
+
+  }
+
+}
+
+// Logout
+
+window.logoutUser = async function(){
+
+  await signOut(auth);
+
+  location.reload();
+
+}
+
+// Auto Login Restore
+
+onAuthStateChanged(auth, async(user)=>{
+
+  if(user){
+
+    const docRef = doc(db,"users",user.uid);
+
+    const docSnap = await getDoc(docRef);
+
+    if(docSnap.exists()){
+
+      const data = docSnap.data();
+
+      document.getElementById("result").style.display =
+        "block";
+
+      document.getElementById("result").innerHTML = `
+
+        <h3>Welcome Back</h3>
+
+        <br>
+
+        <b>User:</b> ${data.username}<br>
+
+        <b>Email:</b> ${data.email}<br>
+
+        <b>Theme:</b> ${data.theme}<br>
+
+        <b>Mode:</b> ${data.performance}<br><br>
+
+        Cloud session restored successfully.
+
+        <br><br>
+
+        <button class="logout" onclick="logoutUser()">
+        Logout
+        </button>
+
+      `;
+
+    }
+
+  }
+
+});
+
+</script>
+
+</body>
+</html>
