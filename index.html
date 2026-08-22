@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width,
+               initial-scale=1.0,
+               maximum-scale=1.0,
+               user-scalable=no">
+
+<title>Flappy Sky</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    background: #70c5ce;
+}
+
+canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: rgba(0,0,0,.18);
+}
+
+.panel {
+    width: min(400px, 92vw);
+    padding: 25px;
+    border-radius: 18px;
+    background: white;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(0,0,0,.3);
+}
+
+h1 {
+    margin-top: 0;
+}
+
+input {
+    width: 100%;
+    padding: 13px;
+    margin: 7px 0;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    font-size: 17px;
+}
+
+button {
+    width: 100%;
+    padding: 13px;
+    margin-top: 10px;
+    border: 0;
+    border-radius: 10px;
+    background: #ffd83d;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.secondary {
+    background: #e8e8e8;
+}
+
+.error {
+    color: #d00000;
+}
+
+#hud {
+    position: fixed;
+    top: 12px;
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-size: 25px;
+    font-weight: bold;
+    text-shadow: 2px 2px 3px black;
+    pointer-events: none;
+    z-index: 5;
+}
+
+#leaderboard {
+    max-height: 280px;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.rank {
+    padding: 9px;
+    margin: 5px 0;
+    border-radius: 8px;
+    background: #eee;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="hud" class="hidden">
+    Score: <span id="score">0</span><br>
+    🪙 <span id="coins">0</span>
+</div>
+
+
+<!-- LOGIN -->
+
+<div id="loginScreen" class="screen">
+
+<div class="panel">
+
+<h1>🐦 Flappy Sky</h1>
+
+<h2>Login</h2>
+
+<input
+    id="loginUsername"
+    maxlength="20"
+    placeholder="Username">
+
+<input
+    id="loginPassword"
+    type="password"
+    placeholder="Password">
+
+<button id="loginButton">
+    LOGIN
+</button>
+
+<button
+    id="showSignup"
+    class="secondary">
+
+    CREATE ACCOUNT
+</button>
+
+<p id="loginMessage" class="error"></p>
+
+</div>
+</div>
+
+
+<!-- SIGN UP -->
+
+<div id="signupScreen" class="screen hidden">
+
+<div class="panel">
+
+<h1>📝 Create Account</h1>
+
+<input
+    id="signupUsername"
+    maxlength="20"
+    placeholder="Username">
+
+<input
+    id="signupPassword"
+    type="password"
+    placeholder="Password">
+
+<input
+    id="signupPassword2"
+    type="password"
+    placeholder="Confirm password">
+
+<button id="signupButton">
+    SIGN UP
+</button>
+
+<button
+    id="showLogin"
+    class="secondary">
+
+    BACK TO LOGIN
+</button>
+
+<p id="signupMessage" class="error"></p>
+
+</div>
+</div>
+
+
+<!-- MENU -->
+
+<div id="menuScreen" class="screen hidden">
+
+<div class="panel">
+
+<h1>FLAPPY SKY 🐦</h1>
+
+<p>
+Welcome,
+<b id="playerName"></b>
+</p>
+
+<p>
+🏆 Best:
+<span id="bestScore">0</span>
+</p>
+
+<p>
+🪙 Coins:
+<span id="menuCoins">0</span>
+</p>
+
+<button id="playButton">
+    PLAY
+</button>
+
+<button
+    id="leaderboardButton"
+    class="secondary">
+
+    🏆 LEADERBOARD
+</button>
+
+<button
+    id="logoutButton"
+    class="secondary">
+
+    LOG OUT
+</button>
+
+</div>
+</div>
+
+
+<!-- LEADERBOARD -->
+
+<div id="leaderboardScreen"
+     class="screen hidden">
+
+<div class="panel">
+
+<h1>🏆 Leaderboard</h1>
+
+<div id="leaderboard">
+    Loading...
+</div>
+
+<button
+    id="backButton">
+
+    BACK
+</button>
+
+</div>
+</div>
+
+
+<!-- GAME OVER -->
+
+<div id="gameOverScreen"
+     class="screen hidden">
+
+<div class="panel">
+
+<h1>GAME OVER 💥</h1>
+
+<p>
+Score:
+<b id="finalScore">0</b>
+</p>
+
+<p>
+🪙 Coins:
+<b id="finalCoins">0</b>
+</p>
+
+<button id="againButton">
+    PLAY AGAIN
+</button>
+
+<button
+    id="gameOverLeaderboard"
+    class="secondary">
+
+    🏆 LEADERBOARD
+</button>
+
+<button
+    id="gameOverMenu"
+    class="secondary">
+
+    MENU
+</button>
+
+</div>
+</div>
+
+
+<script>
+
+/* ==========================================
+   PYTHON SERVER
+========================================== */
+
+const API_URL = "https://trader-latino-dozens-spin.trycloudflare.com";
+
+
+/* ==========================================
+   ELEMENTS
+========================================== */
+
+const canvas =
+    document.getElementById("game");
+
+const ctx =
+    canvas.getContext("2d");
+
+const hud =
+    document.getElementById("hud");
+
+
+/* ==========================================
+   PLAYER
+========================================== */
+
+let currentUser = null;
+
+let authToken = "";
+
+let score = 0;
+
+let coins = 0;
+
+let highScore = 0;
+
+
+/* ==========================================
+   SCREEN
+========================================== */
+
+function showScreen(screen) {
+
+    document
+        .querySelectorAll(".screen")
+        .forEach(s =>
+            s.classList.add("hidden")
+        );
+
+    screen.classList.remove("hidden");
+}
+
+
+/* ==========================================
+   SIGN UP
+========================================== */
+
+document
+.getElementById("showSignup")
+.onclick = function() {
+
+    showScreen(
+        document.getElementById(
+            "signupScreen"
+        )
+    );
+};
+
+
+document
+.getElementById("showLogin")
+.onclick = function() {
+
+    showScreen(
+        document.getElementById(
+            "loginScreen"
+        )
+    );
+};
+
+
+document
+.getElementById("signupButton")
+.onclick = async function() {
+
+    const username =
+        document.getElementById(
+            "signupUsername"
+        ).value.trim();
+
+    const password =
+        document.getElementById(
+            "signupPassword"
+        ).value;
+
+    const password2 =
+        document.getElementById(
+            "signupPassword2"
+        ).value;
+
+    const message =
+        document.getElementById(
+            "signupMessage"
+        );
+
+
+    if (!username) {
+
+        message.textContent =
+            "Enter a username.";
+
+        return;
+    }
+
+
+    if (password.length < 8) {
+
+        message.textContent =
+            "Password must be at least 8 characters.";
+
+        return;
+    }
+
+
+    if (password !== password2) {
+
+        message.textContent =
+            "Passwords do not match.";
+
+        return;
+    }
+
+
+    message.textContent =
+        "Creating account...";
+
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL +
+                "/api/signup",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        username:
+                            username,
+
+                        password:
+                            password
+                    })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            message.textContent =
+                data.error ||
+                "Sign up failed.";
+
+            return;
+        }
+
+
+        message.textContent =
+            "Account created!";
+
+
+        document
+        .getElementById(
+            "loginUsername"
+        ).value =
+            username;
+
+
+        document
+        .getElementById(
+            "loginPassword"
+        ).value =
+            "";
+
+
+        setTimeout(
+            function() {
+
+                showScreen(
+                    document
+                    .getElementById(
+                        "loginScreen"
+                    )
+                );
+
+            },
+            700
+        );
+
+
+    } catch(error) {
+
+        message.textContent =
+            "Cannot connect to Python server.";
+
+        console.log(error);
+    }
+};
+
+
+/* ==========================================
+   LOGIN
+========================================== */
+
+document
+.getElementById("loginButton")
+.onclick = async function() {
+
+    const username =
+        document.getElementById(
+            "loginUsername"
+        ).value.trim();
+
+    const password =
+        document.getElementById(
+            "loginPassword"
+        ).value;
+
+    const message =
+        document.getElementById(
+            "loginMessage"
+        );
+
+
+    message.textContent =
+        "Logging in...";
+
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL +
+                "/api/login",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        username:
+                            username,
+
+                        password:
+                            password
+                    })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            message.textContent =
+                data.error ||
+                "Login failed.";
+
+            return;
+        }
+
+
+        authToken =
+            data.token;
+
+
+        localStorage.setItem(
+            "flappyToken",
+            authToken
+        );
+
+
+        currentUser = {
+            username:
+                data.username
+        };
+
+
+        coins =
+            Number(data.coins);
+
+
+        highScore =
+            Number(data.high_score);
+
+
+        enterMenu();
+
+
+    } catch(error) {
+
+        message.textContent =
+            "Cannot connect to Python server.";
+
+        console.log(error);
+    }
+};
+
+
+/* ==========================================
+   MENU
+========================================== */
+
+function enterMenu() {
+
+    document.getElementById(
+        "playerName"
+    ).textContent =
+        currentUser.username;
+
+
+    document.getElementById(
+        "bestScore"
+    ).textContent =
+        highScore;
+
+
+    document.getElementById(
+        "menuCoins"
+    ).textContent =
+        coins;
+
+
+    hud.classList.add(
+        "hidden"
+    );
+
+
+    showScreen(
+        document.getElementById(
+            "menuScreen"
+        )
+    );
+}
+
+
+/* ==========================================
+   LOGOUT
+========================================== */
+
+document
+.getElementById("logoutButton")
+.onclick = async function() {
+
+    try {
+
+        await fetch(
+            API_URL +
+            "/api/logout",
+            {
+                method: "POST",
+
+                headers: {
+                    "Authorization":
+                        "Bearer " +
+                        authToken
+                }
+            }
+        );
+
+    } catch(error) {
+        console.log(error);
+    }
+
+
+    authToken = "";
+
+    currentUser = null;
+
+    localStorage.removeItem(
+        "flappyToken"
+    );
+
+
+    showScreen(
+        document.getElementById(
+            "loginScreen"
+        )
+    );
+};
+
+
+/* ==========================================
+   GAME
+========================================== */
+
+let W = 0;
+let H = 0;
+
+let running = false;
+
+let pipes = [];
+
+let pipeTimer = 0;
+
+let lastTime = 0;
+
+
+const gravity = 1200;
+
+const flapPower = -430;
+
+const pipeSpeed = 190;
+
+const pipeWidth = 65;
+
+const pipeGap = 175;
+
+
+const bird = {
+
+    x: 0,
+
+    y: 0,
+
+    radius: 17,
+
+    velocity: 0
+};
+
+
+function resize() {
+
+    W =
+        window.innerWidth;
+
+    H =
+        window.innerHeight;
+
+    canvas.width = W;
+
+    canvas.height = H;
+}
+
+
+resize();
+
+window.addEventListener(
+    "resize",
+    resize
+);
+
+
+/* ==========================================
+   START GAME
+========================================== */
+
+document
+.getElementById("playButton")
+.onclick = function() {
+
+    score = 0;
+
+    pipes = [];
+
+    pipeTimer = 0;
+
+
+    bird.x =
+        W * 0.25;
+
+    bird.y =
+        H * 0.45;
+
+    bird.velocity =
+        0;
+
+
+    document.getElementById(
+        "score"
+    ).textContent =
+        "0";
+
+
+    document.getElementById(
+        "coins"
+    ).textContent =
+        coins;
+
+
+    hud.classList.remove(
+        "hidden"
+    );
+
+
+    document
+        .querySelectorAll(".screen")
+        .forEach(s =>
+            s.classList.add("hidden")
+        );
+
+
+    running = true;
+
+    lastTime =
+        performance.now();
+
+
+    requestAnimationFrame(
+        gameLoop
+    );
+};
+
+
+/* ==========================================
+   FLAP
+========================================== */
+
+function flap() {
+
+    if (!running)
+        return;
+
+    bird.velocity =
+        flapPower;
+}
+
+
+canvas.addEventListener(
+    "touchstart",
+    function(event) {
+
+        event.preventDefault();
+
+        flap();
+
+    },
+    {
+        passive: false
+    }
+);
+
+
+canvas.addEventListener(
+    "click",
+    flap
+);
+
+
+/* ==========================================
+   CREATE PIPE
+========================================== */
+
+function createPipe() {
+
+    const top =
+        80 +
+        Math.random() *
+        Math.max(
+            20,
+            H -
+            pipeGap -
+            180
+        );
+
+
+    pipes.push({
+
+        x: W,
+
+        top: top,
+
+        bottom:
+            top + pipeGap,
+
+        passed: false
+    });
+}
+
+
+/* ==========================================
+   UPDATE
+========================================== */
+
+function update(dt) {
+
+    bird.velocity +=
+        gravity * dt;
+
+    bird.y +=
+        bird.velocity * dt;
+
+
+    pipeTimer += dt;
+
+
+    if (
+        pipeTimer >= 1.5
+    ) {
+
+        pipeTimer = 0;
+
+        createPipe();
+    }
+
+
+    for (
+        const pipe of pipes
+    ) {
+
+        pipe.x -=
+            pipeSpeed * dt;
+
+
+        if (
+            !pipe.passed &&
+            pipe.x +
+            pipeWidth <
+            bird.x
+        ) {
+
+            pipe.passed = true;
+
+            score++;
+
+            coins++;
+
+
+            document.getElementById(
+                "score"
+            ).textContent =
+                score;
+
+            document.getElementById(
+                "coins"
+            ).textContent =
+                coins;
+        }
+
+
+        if (
+            collision(pipe)
+        ) {
+
+            endGame();
+
+            return;
+        }
+    }
+
+
+    pipes =
+        pipes.filter(
+            p =>
+                p.x >
+                -pipeWidth
+        );
+
+
+    if (
+        bird.y -
+        bird.radius <= 0 ||
+
+        bird.y +
+        bird.radius >= H
+    ) {
+
+        endGame();
+    }
+}
+
+
+/* ==========================================
+   COLLISION
+========================================== */
+
+function collision(pipe) {
+
+    return (
+
+        bird.x +
+        bird.radius >
+        pipe.x &&
+
+        bird.x -
+        bird.radius <
+        pipe.x +
+        pipeWidth &&
+
+        (
+            bird.y -
+            bird.radius <
+            pipe.top ||
+
+            bird.y +
+            bird.radius >
+            pipe.bottom
+        )
+    );
+}
+
+
+/* ==========================================
+   SAVE SCORE
+========================================== */
+
+async function saveScore() {
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL +
+                "/api/score",
+                {
+                    method: "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json",
+
+                        "Authorization":
+                            "Bearer " +
+                            authToken
+                    },
+
+                    body: JSON.stringify({
+
+                        score:
+                            score
+                    })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (response.ok) {
+
+            highScore =
+                Math.max(
+                    highScore,
+                    Number(
+                        data.high_score ||
+                        score
+                    )
+                );
+        }
+
+
+    } catch(error) {
+
+        console.log(
+            "Score save failed:",
+            error
+        );
+    }
+}
+
+
+/* ==========================================
+   GAME OVER
+========================================== */
+
+async function endGame() {
+
+    if (!running)
+        return;
+
+
+    running = false;
+
+    hud.classList.add(
+        "hidden"
+    );
+
+
+    if (
+        score >
+        highScore
+    ) {
+
+        highScore =
+            score;
+    }
+
+
+    await saveScore();
+
+
+    document.getElementById(
+        "finalScore"
+    ).textContent =
+        score;
+
+
+    document.getElementById(
+        "finalCoins"
+    ).textContent =
+        coins;
+
+
+    showScreen(
+        document.getElementById(
+            "gameOverScreen"
+        )
+    );
+}
+
+
+/* ==========================================
+   DRAW
+========================================== */
+
+function draw() {
+
+    ctx.fillStyle =
+        "#70c5ce";
+
+    ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
+
+
+    ctx.fillStyle =
+        "#35a936";
+
+
+    for (
+        const pipe of pipes
+    ) {
+
+        ctx.fillRect(
+            pipe.x,
+            0,
+            pipeWidth,
+            pipe.top
+        );
+
+
+        ctx.fillRect(
+            pipe.x,
+            pipe.bottom,
+            pipeWidth,
+            H -
+            pipe.bottom
+        );
+    }
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        bird.x,
+        bird.y,
+        bird.radius,
+        0,
+        Math.PI * 2
+    );
+
+
+    ctx.fillStyle =
+        "#ffd83d";
+
+    ctx.fill();
+
+
+    ctx.strokeStyle =
+        "#333";
+
+    ctx.stroke();
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        bird.x + 6,
+        bird.y - 6,
+        4,
+        0,
+        Math.PI * 2
+    );
+
+
+    ctx.fillStyle =
+        "white";
+
+    ctx.fill();
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        bird.x + 7,
+        bird.y - 6,
+        2,
+        0,
+        Math.PI * 2
+    );
+
+
+    ctx.fillStyle =
+        "black";
+
+    ctx.fill();
+}
+
+
+/* ==========================================
+   GAME LOOP
+========================================== */
+
+function gameLoop(time) {
+
+    if (!running)
+        return;
+
+
+    let dt =
+        (time - lastTime) /
+        1000;
+
+
+    lastTime =
+        time;
+
+
+    dt =
+        Math.min(
+            dt,
+            0.033
+        );
+
+
+    update(dt);
+
+    draw();
+
+
+    if (running) {
+
+        requestAnimationFrame(
+            gameLoop
+        );
+    }
+}
+
+
+/* ==========================================
+   LEADERBOARD
+========================================== */
+
+async function loadLeaderboard() {
+
+    const box =
+        document.getElementById(
+            "leaderboard"
+        );
+
+
+    box.innerHTML =
+        "Loading leaderboard...";
+
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL +
+                "/api/leaderboard"
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Leaderboard error"
+            );
+        }
+
+
+        if (!data.length) {
+
+            box.innerHTML =
+                "No players yet.";
+
+            return;
+        }
+
+
+        box.innerHTML = "";
+
+
+        data.forEach(
+            function(player) {
+
+                const row =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                row.className =
+                    "rank";
+
+
+                row.textContent =
+                    "#" +
+                    player.rank +
+                    " " +
+                    player.username +
+                    " — " +
+                    player.score +
+                    " 🪙" +
+                    player.coins;
+
+
+                box.appendChild(
+                    row
+                );
+            }
+        );
+
+
+    } catch(error) {
+
+        box.innerHTML =
+            "Cannot connect to leaderboard.";
+
+        console.log(error);
+    }
+}
+
+
+/* ==========================================
+   LEADERBOARD BUTTONS
+========================================== */
+
+document
+.getElementById(
+    "leaderboardButton"
+)
+.onclick = function() {
+
+    showScreen(
+        document.getElementById(
+            "leaderboardScreen"
+        )
+    );
+
+    loadLeaderboard();
+};
+
+
+document
+.getElementById(
+    "gameOverLeaderboard"
+)
+.onclick = function() {
+
+    showScreen(
+        document.getElementById(
+            "leaderboardScreen"
+        )
+    );
+
+    loadLeaderboard();
+};
+
+
+document
+.getElementById(
+    "backButton"
+)
+.onclick = function() {
+
+    enterMenu();
+};
+
+
+document
+.getElementById(
+    "gameOverMenu"
+)
+.onclick = function() {
+
+    enterMenu();
+};
+
+
+document
+.getElementById(
+    "againButton"
+)
+.onclick = function() {
+
+    document
+        .getElementById(
+            "playButton"
+        )
+        .click();
+};
+
+
+/* ==========================================
+   INITIALIZE
+========================================== */
+
+const savedToken =
+    localStorage.getItem(
+        "flappyToken"
+    );
+
+
+if (savedToken) {
+
+    authToken =
+        savedToken;
+
+    /*
+       We don't automatically trust
+       the saved token. Ask the server.
+    */
+
+    fetch(
+        API_URL + "/api/me",
+        {
+            headers: {
+                "Authorization":
+                    "Bearer " +
+                    authToken
+            }
+        }
+    )
+    .then(
+        response =>
+            response.ok
+                ? response.json()
+                : Promise.reject()
+    )
+    .then(
+        data => {
+
+            currentUser = {
+                username:
+                    data.username
+            };
+
+            coins =
+                Number(data.coins);
+
+            highScore =
+                Number(data.high_score);
+
+            enterMenu();
+        }
+    )
+    .catch(
+        function() {
+
+            localStorage.removeItem(
+                "flappyToken"
+            );
+
+            authToken = "";
+
+            showScreen(
+                document.getElementById(
+                    "loginScreen"
+                )
+            );
+        }
+    );
+
+} else {
+
+    showScreen(
+        document.getElementById(
+            "loginScreen"
+        )
+    );
+}
+
+
+draw();
+
+</script>
+
+</body>
+</html>
